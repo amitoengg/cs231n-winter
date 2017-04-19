@@ -15,6 +15,7 @@ def load_CIFAR_batch(filename):
 
 def load_CIFAR10(ROOT):
   """ load all of cifar """
+  print ROOT
   xs = []
   ys = []
   for b in range(1,6):
