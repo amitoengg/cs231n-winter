@@ -53,7 +53,7 @@ X_train = np.reshape(X_train, (X_train.shape[0], -1))
 X_test = np.reshape(X_test, (X_test.shape[0], -1))
 print(X_train.shape, X_test.shape)
 
-best_k = 10
+best_k = 8
 
 classifier = KNearestNeighbor()
 classifier.train(X_train, y_train)
