@@ -1,6 +1,10 @@
 import numpy as np
 from random import shuffle
 
+from astropy._erfa.core import num00a
+from statsmodels.genmod.tests.results.glm_test_resids import scotvote_resids
+
+
 def svm_loss_naive(W, X, y, reg):
   """
   Structured SVM loss function, naive implementation (with loops).
@@ -25,22 +29,30 @@ def svm_loss_naive(W, X, y, reg):
   num_classes = W.shape[1]
   num_train = X.shape[0]
   loss = 0.0
+
   for i in xrange(num_train):
     scores = X[i].dot(W)
     correct_class_score = scores[y[i]]
+    count = 0
     for j in xrange(num_classes):
       if j == y[i]:
         continue
-      margin = scores[j] - correct_class_score + 1 # note delta = 1
+      margin = scores[j] - correct_class_score + 1  # note delta = 1
       if margin > 0:
         loss += margin
+        count += 1
+        dW[:, j] += X[i, :].T
+    dW[:, y[i]] -= count * X[i, :].T
 
   # Right now the loss is a sum over all training examples, but we want it
   # to be an average instead so we divide by num_train.
   loss /= num_train
-
+  dW/=num_train
   # Add regularization to the loss.
   loss += 0.5 * reg * np.sum(W * W)
+
+
+  dW += reg *W
 
   #############################################################################
   # TODO:                                                                     #
@@ -61,15 +73,32 @@ def svm_loss_vectorized(W, X, y, reg):
 
   Inputs and outputs are the same as svm_loss_naive.
   """
+  num_classes = W.shape[1]
+  num_train = X.shape[0]
+
   loss = 0.0
   dW = np.zeros(W.shape) # initialize the gradient as zero
+  scores = X.dot(W) # N x C
+  #print scores.shape
+  #print y.shape
+  #print scores[np.arange(num_train),y].reshape(num_train,1).shape
+
+  scores = scores - scores[np.arange(num_train),y].reshape(num_train,1) + 1
+  scores[scores<0]=0
+  scores[np.arange(num_train),y]=0
+  loss = np.sum(scores)
+  loss /= num_train
+  # Add regularization
+  loss += 0.5 * reg * np.sum(W * W)
+
+
 
   #############################################################################
   # TODO:                                                                     #
   # Implement a vectorized version of the structured SVM loss, storing the    #
   # result in loss.                                                           #
   #############################################################################
-  pass
+
   #############################################################################
   #                             END OF YOUR CODE                              #
   #############################################################################
@@ -84,7 +113,17 @@ def svm_loss_vectorized(W, X, y, reg):
   # to reuse some of the intermediate values that you used to compute the     #
   # loss.                                                                     #
   #############################################################################
-  pass
+  X_mask = np.zeros(scores.shape)
+  # column maps to class, row maps to sample; a value v in X_mask[i, j]
+  # adds a row sample i to column class j with multiple of v
+  X_mask[scores > 0] = 1
+  # for each sample, find the total number of classes where margin > 0
+  incorrect_counts = np.sum(X_mask, axis=1)
+  X_mask[np.arange(num_train), y] = -incorrect_counts
+  dW = X.T.dot(X_mask)
+
+  dW /= num_train  # average out weights
+  dW += reg * W  # regularize the weights
   #############################################################################
   #                             END OF YOUR CODE                              #
   #############################################################################
