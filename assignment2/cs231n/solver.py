@@ -1,6 +1,6 @@
 import numpy as np
 
-from cs231n import optim
+import optim
 
 
 class Solver(object):
@@ -222,6 +222,7 @@ class Solver(object):
     num_train = self.X_train.shape[0]
     iterations_per_epoch = max(num_train / self.batch_size, 1)
     num_iterations = self.num_epochs * iterations_per_epoch
+    #print 'num_iterations=',num_iterations, ' iterations_per_epoch=',iterations_per_epoch
 
     for t in xrange(num_iterations):
       self._step()
